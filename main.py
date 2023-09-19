@@ -57,7 +57,7 @@ def decide_environment(env: str, tenant_id: str) -> str:
 def elastic_query(organization_id, requester_id):
     query = {
         "script": {
-            "source": f"ctx._source.organization = '{organization_id}'",
+            "source": f"ctx._source.organization = {organization_id}",
             "lang": "painless",
         },
         "query": {
