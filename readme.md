@@ -38,6 +38,8 @@ FROM (SELECT au.organization_id, jsonb_agg(DISTINCT au.id) AS user_ids
 
 ### How to run:
 - Install the `requests` and `argparse` libraries for Python.
+  - or run the following command:
+  - `pip install -r requirements.txt`
 - Run the script with the following command:
   - **tenantId**: The tenantId to be updated.
   - **env**: The environment to be updated.
