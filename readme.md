@@ -26,7 +26,7 @@ It accomplishes the following tasks:
 
 ### Generate `result.json` file:
 This query can be used to generate the `result.json` file from the database.
-```postgresql
+```sql
 SELECT json_agg(json_build_array(organization_id, user_ids))
 FROM (SELECT au.organization_id, jsonb_agg(DISTINCT au.id) AS user_ids
       FROM ticket t
