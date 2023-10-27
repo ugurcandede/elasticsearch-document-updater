@@ -11,9 +11,9 @@ It accomplishes the following tasks:
 - The JSON file should have the following format:
 ```json
   {
-    "organizationId1": ["requesterId1", "requesterId2", ...],
-    "organizationId2": ["requesterId3", "requesterId4", ...],
-    ...
+      "field_key1": ["ticket_key1", "ticket_key2", ...],
+      "field_key2": ["ticket_key3", "ticket_key4", ...],
+      ...
   }
   ```
 - After the execution, it prints start and end times along with the processing time.
@@ -27,13 +27,12 @@ It accomplishes the following tasks:
 ### Generate `result.json` file:
 This query can be used to generate the `result.json` file from the database.
 ```sql
-SELECT json_agg(json_build_array(organization_id, user_ids))
-FROM (SELECT au.organization_id, jsonb_agg(DISTINCT au.id) AS user_ids
-      FROM ticket t
-               LEFT JOIN app_user au ON t.requester_id = au.id
-      WHERE au.organization_id IS NOT NULL
-      GROUP BY au.organization_id
-      ) subquery;
+SELECT json_agg(json_build_array(field_key, ticket_keys))
+FROM (SELECT fd.key AS field_key, jsonb_agg(cf.ticket_key) AS ticket_keys
+      FROM field_definition fd
+               LEFT JOIN custom_field cf ON fd.id = cf.definition_id
+      WHERE fd.type = 'NUMBER_DECIMAL' AND cf.ticket_key IS NOT NULL
+      GROUP BY fd.key) subquery
 ```
 
 ### How to run:

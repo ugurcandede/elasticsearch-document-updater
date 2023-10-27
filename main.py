@@ -6,7 +6,7 @@ ElasticSearch Bulk Document Updater Script
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Author: Ugurcan Dede
-Date: September 18, 2023
+Date: October 27, 2023
 GitHub: https://github.com/ugurcandede
 
 This Python script is designed to perform bulk Elasticsearch data update operations.
@@ -19,8 +19,8 @@ Usage:
 - This script reads document data from a JSON file and performs document updates on Elasticsearch.
 - The JSON file should have the following format:
   {
-      "organizationId1": ["requesterId1", "requesterId2", ...],
-      "organizationId2": ["requesterId3", "requesterId4", ...],
+      "field_key1": ["ticket_key1", "ticket_key2", ...],
+      "field_key2": ["ticket_key3", "ticket_key4", ...],
       ...
   }
 - After the execution, it prints start and end times along with the processing time.
@@ -54,33 +54,33 @@ def decide_environment(env: str, tenant_id: str) -> str:
         raise EnvironmentError(f"Unknown environment: {env}")
 
 
-def elastic_query(organization_id, requester_id):
+def elastic_query(field_key, ticket_key):
     query = {
         "script": {
-            "source": f"ctx._source.organization = {organization_id}",
+            "source": f"ctx._source.fieldMap.{field_key}.type = NUMBER_DECIMAL",
             "lang": "painless",
         },
         "query": {
             "bool": {
-                "should": [{"term": {"fieldMap.ts.requester.value": requester_id}}]
+                "should": [{"term": {"key.keyword": {ticket_key}}}]
             }
         },
     }
     return json.dumps(query)
 
 
-def send_update_request_bulk(organization_id, requester_ids, env, tenant_id):
+def send_update_request_bulk(field_key, ticket_keys, env, tenant_id):
     headers = {"Content-Type": "application/json"}
     url = decide_environment(env, tenant_id)
 
-    print(f"Sending update request for organization id: {organization_id}")
-    for rid in requester_ids:
-        data = elastic_query(organization_id, rid)
+    print(f"Sending update request for field key: {field_key} as fieldMap.{field_key}.type = NUMBER_DECIMAL")
+    for key in ticket_keys:
+        data = elastic_query(field_key, key)
         try:
             response = requests.post(url=url, data=data, headers=headers)
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            print(f"An error occurred while updating documents with organization id {organization_id}: {str(e)}")
+            print(f"An error occurred while updating documents with organization id {field_key}: {str(e)}")
 
 
 def main():
