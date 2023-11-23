@@ -19,9 +19,11 @@ Usage:
 - This script reads document data from a JSON file and performs document updates on Elasticsearch.
 - The JSON file should have the following format:
   {
-      "field_key1": ["ticket_key1", "ticket_key2", ...],
-      "field_key2": ["ticket_key3", "ticket_key4", ...],
-      ...
+      "tenantId1": [
+        {"field_key2": ["ticket_key1", "ticket_key2"]},
+        {"field_key2": ["ticket_key3", "ticket_key4"]}
+      ],
+      "tenantId2": null
   }
 - After the execution, it prints start and end times along with the processing time.
 """
@@ -46,46 +48,49 @@ environment_addresses = {
     "prod": "http://xxx:9200",
 }
 
+headers = {"Content-Type": "application/json"}
 
-def decide_environment(env: str, tenant_id: str) -> str:
+
+def get_update_url(env, tenant_id):
     if env in environments:
-        return f"{environment_addresses[env]}/{tenant_id}_tickets_{environments[env]}/_update_by_query"
+        return f"{environment_addresses[env]}/{tenant_id}_tickets_{environments[env]}/_update_by_query?refresh=true"
     else:
         raise EnvironmentError(f"Unknown environment: {env}")
 
 
-def elastic_query(field_key, ticket_key):
+def generate_elastic_query(field_key, ticket_key):
     query = {
         "script": {
-            "source": f"ctx._source.fieldMap.{field_key}.type = NUMBER_DECIMAL",
+            "source": f"ctx._source.fieldMap['{field_key}'].put('type','NUMBER_DECIMAL')",
             "lang": "painless",
         },
         "query": {
             "bool": {
-                "should": [{"term": {"key.keyword": {ticket_key}}}]
+                "should": [{"term": {"key.keyword": ticket_key}}]
             }
         },
     }
     return json.dumps(query)
 
 
-def send_update_request_bulk(field_key, ticket_keys, env, tenant_id):
-    headers = {"Content-Type": "application/json"}
-    url = decide_environment(env, tenant_id)
+def send_update_request_bulk(tenant_id, values, env):
+    for value in values:
+        for cf_key, ticket_keys in value.items():
+            for ticket_key in ticket_keys:
+                try:
+                    url = get_update_url(env, tenant_id)
+                    data = generate_elastic_query(cf_key, ticket_key)
 
-    print(f"Sending update request for field key: {field_key} as fieldMap.{field_key}.type = NUMBER_DECIMAL")
-    for key in ticket_keys:
-        data = elastic_query(field_key, key)
-        try:
-            response = requests.post(url=url, data=data, headers=headers)
-            response.raise_for_status()
-        except requests.exceptions.RequestException as e:
-            print(f"An error occurred while updating documents with organization id {field_key}: {str(e)}")
+                    response = requests.post(url=url, data=data, headers=headers)
+                    response.raise_for_status()
+                    print(f"[SUCCESS] tenantId: {tenant_id}, ticketKey: {ticket_key}, customFieldKey: {cf_key}")
+                except requests.exceptions.RequestException as e:
+                    print(
+                        f"[ERROR] error while updating documents with tenantId: {tenant_id}, ticketKey: {ticket_key}, customFieldKey: {cf_key} {str(e)}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Update Elasticsearch documents.")
-    parser.add_argument("--tenantId", required=True, help="Tenant ID")
     parser.add_argument("--env", required=True, choices=environments.keys(), help="Environment")
 
     args = parser.parse_args()
@@ -99,8 +104,9 @@ def main():
             json_file = json.load(file)
 
             with ThreadPoolExecutor(max_workers=4) as executor:
-                for key, values in json_file:
-                    executor.submit(send_update_request_bulk, key, values, args.env, args.tenantId)
+                for tenant_id, values in json_file.items():
+                    if values is not None:
+                        executor.submit(send_update_request_bulk, tenant_id, values, args.env)
 
     except Exception as e:
         print(f"An error occurred: {e}")
