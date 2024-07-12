@@ -19,8 +19,8 @@ Usage:
 - This script reads document data from a JSON file and performs document updates on Elasticsearch.
 - The JSON file should have the following format:
 {
-  "develop": 487,
-  "release": 37
+  "develop": 37,
+  "release": 487
 }
 - After the execution, it prints start and end times along with the processing time.
 """
@@ -61,9 +61,7 @@ def generate_elastic_query(option_id):
             "lang": "painless",
         },
         "query": {
-            "bool": {
-                "should": [{"term": {"key.keyword": "TICKET-14"}}]
-            }
+            "match_all": {}
         },
     }
     return json.dumps(query)
