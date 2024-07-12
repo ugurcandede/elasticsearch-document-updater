@@ -29,12 +29,7 @@ This query can be used to generate the `result.json` file from the database.
 
 - First execute this SQL command to get `schema_names` for all tenants.
 ```sql
-SELECT 'SELECT jsonb_object_agg(foo.tenantid, foo.json) FROM(' || string_agg(
-        '(select ''' || mt.schema_name || ''' as tenantId, fdeo.id as json from ' || mt.schema_name ||
-        '.field_definition fd LEFT JOIN ' || mt.schema_name ||
-        '.field_definition_entity_options fdeo on fd.id = fdeo.field_definition_entity_id WHERE fd.key = ''ts.scope'' AND fdeo.label = ''TICKET'')',
-        ' UNION ') || ')as foo' || ';'
-from main.tenant mt;
+SELECT 'SELECT jsonb_object_agg(foo.tenantid, foo.json) FROM(' || string_agg('(select ''' || mt.schema_name ||''' as tenantId, fdeo.id as json from ' || mt.schema_name || '.field_definition fd LEFT JOIN ' || mt.schema_name || '.field_definition_entity_options fdeo on fd.id = fdeo.field_definition_entity_id WHERE fd.key = ''ts.scope'' AND fdeo.label = ''TICKET'')', ' UNION ') || ')as foo' || ';' from main.tenant mt;
 ```
 
 - Copy generated SQL query string and execute with `\gexec` command using `psql`
