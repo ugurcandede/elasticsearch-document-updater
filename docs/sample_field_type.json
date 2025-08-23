@@ -1,0 +1,7 @@
+{
+  "develop": [
+    {"tu.decimal1": ["TICKET-1", "TICKET-12"]},
+    {"tu.decimal2": ["TICKET-2", "TICKET-3"]}
+  ],
+  "test": null
+}

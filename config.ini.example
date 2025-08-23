@@ -1,0 +1,25 @@
+# Elasticsearch Bulk Updater Configuration
+# ==========================================
+#
+# This file contains example configurations for different environments.
+# Copy this file to 'config.ini' and modify the values according to your setup.
+
+[environments]
+# Environment mappings
+local = dev
+dev = staging
+net = preprod
+prod = prod
+
+[elasticsearch_urls]
+# Elasticsearch server URLs for each environment
+local = http://localhost:9200
+dev = http://your-dev-server:9200
+net = http://your-preprod-server:9200
+prod = http://your-prod-server:9200
+
+[settings]
+# Default settings
+default_max_workers = 4
+request_timeout = 30
+connection_retry_attempts = 3
